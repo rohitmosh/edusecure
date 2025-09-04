@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, GraduationCap, Building2, Users } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Shield, GraduationCap, Building2, Users, AlertCircle, Loader2 } from 'lucide-react';
 
 interface LoginPageProps {
   onLogin: (role: string, username: string) => void;
@@ -13,12 +14,35 @@ interface LoginPageProps {
 const LoginPage = ({ onLogin }: LoginPageProps) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username && password && role) {
-      onLogin(role, username);
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        onLogin(data.role, data.username);
+      } else {
+        setError(data.error || 'Login failed');
+      }
+    } catch (err) {
+      setError('Connection error. Please ensure the backend server is running.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -52,50 +76,14 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
           <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">
-                    <div className="flex items-center gap-2">
-                      {roleIcons.admin}
-                      <div>
-                        <div className="font-medium">Administrator</div>
-                        <div className="text-xs text-muted-foreground">
-                          {roleDescriptions.admin}
-                        </div>
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="faculty">
-                    <div className="flex items-center gap-2">
-                      {roleIcons.faculty}
-                      <div>
-                        <div className="font-medium">Faculty</div>
-                        <div className="text-xs text-muted-foreground">
-                          {roleDescriptions.faculty}
-                        </div>
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="exam_center">
-                    <div className="flex items-center gap-2">
-                      {roleIcons.exam_center}
-                      <div>
-                        <div className="font-medium">Exam Center</div>
-                        <div className="text-xs text-muted-foreground">
-                          {roleDescriptions.exam_center}
-                        </div>
-                      </div>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
@@ -124,17 +112,34 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
             <Button 
               type="submit" 
               className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary-glow hover:to-accent-glow transition-all duration-300 shadow-md hover:shadow-lg"
-              disabled={!username || !password || !role}
+              disabled={!username || !password || isLoading}
             >
-              <Users className="mr-2 h-4 w-4" />
-              Secure Login
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  <Users className="mr-2 h-4 w-4" />
+                  Secure Login
+                </>
+              )}
             </Button>
           </form>
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <p className="text-xs text-muted-foreground">
               Protected by SHA-256 encryption and role-based access control
             </p>
+            <div className="text-xs text-muted-foreground">
+              <p className="font-semibold mb-1">Demo Credentials:</p>
+              <div className="space-y-1">
+                <p><strong>Admin:</strong> admin1 / admin123</p>
+                <p><strong>Faculty:</strong> faculty1 / faculty123</p>
+                <p><strong>Exam Center:</strong> center1 / center123</p>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

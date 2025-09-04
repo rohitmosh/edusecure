@@ -52,7 +52,7 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
     }
   };
 
-  const simulateProcessing = async () => {
+  const processUpload = async () => {
     setIsProcessing(true);
     setProgress(0);
 
@@ -65,20 +65,48 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
       { step: 'Finalizing secure upload...', duration: 1000 }
     ];
 
-    for (let i = 0; i < steps.length; i++) {
-      setProcessingStep(steps[i].step);
-      setProgress((i + 1) * (100 / steps.length));
-      await new Promise(resolve => setTimeout(resolve, steps[i].duration));
-    }
+    try {
+      // Simulate processing steps for UI feedback
+      for (let i = 0; i < steps.length; i++) {
+        setProcessingStep(steps[i].step);
+        setProgress((i + 1) * (100 / steps.length));
+        await new Promise(resolve => setTimeout(resolve, steps[i].duration / 3)); // Faster for demo
+      }
 
-    setIsProcessing(false);
-    setIsUploaded(true);
-    setShowOriginal(false);
-    
-    toast({
-      title: "Upload Successful",
-      description: "Exam paper has been securely scrambled and uploaded.",
-    });
+      // Actual API call
+      const formData = new FormData();
+      formData.append('file', file!);
+      formData.append('exam_id', examTitle.replace(/\s+/g, '_').toLowerCase());
+      formData.append('scheduled_time', new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()); // 24 hours from now
+
+      const response = await fetch('http://localhost:5000/api/faculty/upload', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setIsProcessing(false);
+        setIsUploaded(true);
+        setShowOriginal(false);
+        
+        toast({
+          title: "Upload Successful",
+          description: `Exam paper has been securely scrambled and uploaded. ${data.total_pages} pages processed.`,
+        });
+      } else {
+        throw new Error(data.error || 'Upload failed');
+      }
+    } catch (error) {
+      setIsProcessing(false);
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : 'An error occurred during upload',
+        variant: "destructive"
+      });
+    }
   };
 
   const handleUpload = async () => {
@@ -91,7 +119,7 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
       return;
     }
 
-    await simulateProcessing();
+    await processUpload();
   };
 
   return (

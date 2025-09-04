@@ -1,0 +1,10 @@
+Flask
+Flask-Login
+Flask-CORS
+pdf2image
+Pillow
+numpy
+phe
+pycryptodome
+python-docx
+requests
