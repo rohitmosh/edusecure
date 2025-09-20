@@ -54,10 +54,10 @@ def main():
     else:
         print("✅ Backend server is running")
     
-    # Step 3: Create sample exam papers
+    # Step 3: Create sample exam papers with correct PDFs
     print("\n📝 Step 3: Creating sample exam papers")
-    if not run_command(f"{sys.executable} create_sample_exams.py", "Creating sample exams"):
-        print("⚠️  Sample exams creation failed, but continuing...")
+    if not run_command(f"{sys.executable} refresh_demo_data.py", "Creating fresh demo data"):
+        print("⚠️  Demo data creation failed, but continuing...")
     
     # Step 4: Test the complete system
     print("\n🧪 Step 4: Testing system integration")

@@ -193,13 +193,31 @@ def main():
         ]
     ]
     
-    # Create PDF files
+    # Create first PDF file
     pdf1_created = create_sample_pdf('math_final_exam.pdf', 'Mathematics Final Exam', exam1_questions)
-    pdf2_created = create_sample_pdf('cs_midterm_exam.pdf', 'Computer Science Midterm', exam2_questions)
     
-    if not (pdf1_created and pdf2_created):
-        print("❌ Failed to create sample PDFs")
+    # Check if test.pdf exists for second exam
+    pdf2_exists = os.path.exists('test.pdf')
+    
+    if not pdf1_created:
+        print("❌ Failed to create Mathematics Final Exam PDF")
         return
+    
+    if not pdf2_exists:
+        print("❌ test.pdf not found. Creating it...")
+        # Create test.pdf if it doesn't exist
+        import subprocess
+        try:
+            subprocess.run(['python', 'create_test_pdf.py'], check=True, timeout=30)
+            pdf2_exists = os.path.exists('test.pdf')
+            if pdf2_exists:
+                print("✅ Created test.pdf")
+            else:
+                print("❌ Failed to create test.pdf")
+                return
+        except:
+            print("❌ Failed to create test.pdf")
+            return
     
     # Check if backend is running
     try:
@@ -222,7 +240,7 @@ def main():
     # Upload both exams
     exam1_id = upload_exam(cookies, 'math_final_exam.pdf', 'Mathematics Final Exam')
     time.sleep(2)  # Wait between uploads
-    exam2_id = upload_exam(cookies, 'cs_midterm_exam.pdf', 'Computer Science Midterm')
+    exam2_id = upload_exam(cookies, 'test.pdf', 'Test Exam Paper')
     
     if exam1_id and exam2_id:
         print("\n🎉 Sample exams created successfully!")
@@ -236,11 +254,10 @@ def main():
     else:
         print("❌ Failed to upload some exams")
     
-    # Clean up PDF files
+    # Clean up temporary PDF files (keep test.pdf)
     try:
         os.remove('math_final_exam.pdf')
-        os.remove('cs_midterm_exam.pdf')
-        print("🧹 Cleaned up temporary PDF files")
+        print("🧹 Cleaned up temporary PDF files (kept test.pdf)")
     except:
         pass
 
