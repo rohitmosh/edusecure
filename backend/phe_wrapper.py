@@ -12,7 +12,7 @@ def initialize_phe_keys():
     """Initialize Paillier key pair"""
     global PUBLIC_KEY, PRIVATE_KEY
     
-    keys_file = '../config/phe_keys.pkl'
+    keys_file = 'config/phe_keys.pkl'
     
     if os.path.exists(keys_file):
         # Load existing keys
@@ -25,7 +25,7 @@ def initialize_phe_keys():
         PUBLIC_KEY, PRIVATE_KEY = paillier.generate_paillier_keypair()
         
         # Save keys
-        os.makedirs('../config', exist_ok=True)
+        os.makedirs('config', exist_ok=True)
         with open(keys_file, 'wb') as f:
             pickle.dump({
                 'public': PUBLIC_KEY,

@@ -5,19 +5,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Upload, 
-  FileText, 
-  Shield, 
-  Eye, 
-  EyeOff, 
-  CheckCircle, 
+import {
+  Upload,
+  FileText,
+  Shield,
+  Eye,
+  EyeOff,
+  CheckCircle,
   AlertCircle,
   Hash,
   Key,
-  Clock
+  Clock,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import ImagePreview from './ImagePreview';
 
 interface FacultyUploadProps {
   username: string;
@@ -28,24 +31,30 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [examTitle, setExamTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState('');
   const [progress, setProgress] = useState(0);
   const [showOriginal, setShowOriginal] = useState(true);
   const [isUploaded, setIsUploaded] = useState(false);
+  const [uploadedExamId, setUploadedExamId] = useState<string>('');
+  const [uploadResult, setUploadResult] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      if (selectedFile.type === 'application/pdf' || selectedFile.name.endsWith('.docx')) {
+      if (selectedFile.type === 'application/pdf' || selectedFile.name.endsWith('.docx') ||
+        selectedFile.type.startsWith('image/')) {
         setFile(selectedFile);
         setIsUploaded(false);
+        setUploadedExamId('');
+        setUploadResult(null);
       } else {
         toast({
           title: "Invalid File Type",
-          description: "Please select a PDF or DOCX file.",
+          description: "Please select a PDF, DOCX, or image file.",
           variant: "destructive"
         });
       }
@@ -57,50 +66,62 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
     setProgress(0);
 
     const steps = [
-      { step: 'Converting PDF to images...', duration: 1500 },
-      { step: 'Applying chaotic pixel scrambling...', duration: 2000 },
+      { step: 'Validating file...', duration: 500 },
+      { step: 'Converting to images...', duration: 2000 },
+      { step: 'Applying chaotic pixel scrambling...', duration: 2500 },
       { step: 'Computing SHA-256 hash...', duration: 1000 },
-      { step: 'Encrypting metadata with Paillier...', duration: 1500 },
-      { step: 'Generating chaos key...', duration: 1000 },
+      { step: 'Encrypting metadata...', duration: 1500 },
       { step: 'Finalizing secure upload...', duration: 1000 }
     ];
 
     try {
-      // Simulate processing steps for UI feedback
-      for (let i = 0; i < steps.length; i++) {
-        setProcessingStep(steps[i].step);
-        setProgress((i + 1) * (100 / steps.length));
-        await new Promise(resolve => setTimeout(resolve, steps[i].duration / 3)); // Faster for demo
-      }
+      // Generate exam ID
+      const examId = examTitle.replace(/\s+/g, '_').toLowerCase() + '_' + Date.now();
 
-      // Actual API call
+      // Use provided scheduled time or default to 24 hours from now
+      const scheduleTime = scheduledTime || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      // Start the actual upload immediately
       const formData = new FormData();
       formData.append('file', file!);
-      formData.append('exam_id', examTitle.replace(/\s+/g, '_').toLowerCase());
-      formData.append('scheduled_time', new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()); // 24 hours from now
+      formData.append('exam_id', examId);
+      formData.append('scheduled_time', scheduleTime);
 
-      const response = await fetch('http://localhost:5000/api/faculty/upload', {
+      // Show processing steps while upload happens
+      const uploadPromise = fetch('http://localhost:5000/api/faculty/upload', {
         method: 'POST',
         credentials: 'include',
         body: formData,
       });
 
+      // Simulate processing steps for UI feedback
+      for (let i = 0; i < steps.length; i++) {
+        setProcessingStep(steps[i].step);
+        setProgress((i + 1) * (100 / steps.length));
+        await new Promise(resolve => setTimeout(resolve, steps[i].duration / 4));
+      }
+
+      // Wait for the actual upload to complete
+      const response = await uploadPromise;
       const data = await response.json();
 
       if (response.ok && data.success) {
         setIsProcessing(false);
         setIsUploaded(true);
+        setUploadedExamId(examId);
+        setUploadResult(data);
         setShowOriginal(false);
-        
+
         toast({
           title: "Upload Successful",
-          description: `Exam paper has been securely scrambled and uploaded. ${data.total_pages} pages processed.`,
+          description: `Exam paper securely uploaded! ${data.total_pages} pages processed.`,
         });
       } else {
         throw new Error(data.error || 'Upload failed');
       }
     } catch (error) {
       setIsProcessing(false);
+      console.error('Upload error:', error);
       toast({
         title: "Upload Failed",
         description: error instanceof Error ? error.message : 'An error occurred during upload',
@@ -176,13 +197,27 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="scheduledTime">Scheduled Release Time (Optional)</Label>
+                <Input
+                  id="scheduledTime"
+                  type="datetime-local"
+                  value={scheduledTime}
+                  onChange={(e) => setScheduledTime(e.target.value)}
+                  min={new Date().toISOString().slice(0, 16)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  If not specified, defaults to 24 hours from now
+                </p>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="file">Exam Paper File</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     ref={fileInputRef}
                     id="file"
                     type="file"
-                    accept=".pdf,.docx"
+                    accept=".pdf,.docx,.png,.jpg,.jpeg"
                     onChange={handleFileSelect}
                     className="hidden"
                   />
@@ -192,7 +227,7 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
                     className="w-full"
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    {file ? file.name : 'Select PDF or DOCX file'}
+                    {file ? file.name : 'Select PDF, DOCX, or image file'}
                   </Button>
                 </div>
               </div>
@@ -237,19 +272,19 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
                   <Shield className="h-5 w-5" />
                   Security Preview
                 </div>
-                {file && (
+                {isUploaded && uploadedExamId && (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setShowOriginal(!showOriginal)}
+                    onClick={() => window.location.reload()}
                   >
-                    {showOriginal ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
-                    {showOriginal ? 'Hide' : 'Show'} Original
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    New Upload
                   </Button>
                 )}
               </CardTitle>
               <CardDescription>
-                Visual representation of the scrambling process
+                {isUploaded ? 'Live preview of uploaded and scrambled content' : 'Visual representation of the scrambling process'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -258,7 +293,7 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
                   <FileText className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">Select a file to see preview</p>
                 </div>
-              ) : (
+              ) : !isUploaded ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -293,19 +328,38 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
                       </div>
                     </div>
                   </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Real Image Preview */}
+                  <ImagePreview
+                    examId={uploadedExamId}
+                    keyReleased={false}
+                  />
 
-                  {isUploaded && (
+                  {/* Upload Results */}
+                  {uploadResult && (
                     <div className="space-y-3 mt-6">
+                      <div className="flex items-center gap-2 p-3 bg-accent/10 border border-accent/20 rounded-lg">
+                        <CheckCircle className="h-4 w-4 text-accent" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Upload Complete</p>
+                          <p className="text-xs text-muted-foreground">
+                            {uploadResult.total_pages} pages processed, {uploadResult.scrambled_images} images scrambled
+                          </p>
+                        </div>
+                      </div>
+
                       <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
                         <Hash className="h-4 w-4 text-primary" />
                         <div className="flex-1">
                           <p className="text-sm font-medium">SHA-256 Hash Generated</p>
-                          <p className="text-xs text-muted-foreground font-mono">
-                            a1b2c3d4e5f6...
+                          <p className="text-xs text-muted-foreground">
+                            Integrity verification enabled
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
                         <Key className="h-4 w-4 text-accent" />
                         <div className="flex-1">
@@ -319,9 +373,9 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
                       <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
                         <Clock className="h-4 w-4 text-warning" />
                         <div className="flex-1">
-                          <p className="text-sm font-medium">Pending Schedule</p>
+                          <p className="text-sm font-medium">Scheduled Release</p>
                           <p className="text-xs text-muted-foreground">
-                            Awaiting Admin time-lock setup
+                            {scheduledTime ? new Date(scheduledTime).toLocaleString() : 'Default: 24 hours from upload'}
                           </p>
                         </div>
                       </div>

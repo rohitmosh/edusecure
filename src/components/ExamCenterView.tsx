@@ -12,7 +12,13 @@ import {
   AlertTriangle,
   CheckCircle,
   Eye,
-  Loader2
+  Loader2,
+  Unlock,
+  Key,
+  RefreshCw,
+  FileDown,
+  Image as ImageIcon,
+  PlayCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ImagePreview from './ImagePreview';
@@ -27,12 +33,14 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [decrypting, setDecrypting] = useState<string | null>(null);
+  const [simulatingUnlock, setSimulatingUnlock] = useState<string | null>(null);
+  const [simulatedUnlocked, setSimulatedUnlocked] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {
     fetchExams();
-    // Poll for updates every 30 seconds
-    const interval = setInterval(fetchExams, 30000);
+    // Poll for updates every 10 seconds for real-time updates
+    const interval = setInterval(fetchExams, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -132,6 +140,104 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
     }
   };
 
+  const handleSimulateUnlock = async (examId: string) => {
+    try {
+      setSimulatingUnlock(examId);
+      
+      // Simulate the unlock process with visual feedback
+      toast({
+        title: "Simulating Key Release",
+        description: "Demonstrating the unlock process...",
+      });
+
+      // Wait for 2 seconds to simulate the process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Add to simulated unlocked set
+      setSimulatedUnlocked(prev => new Set([...prev, examId]));
+
+      toast({
+        title: "Simulation Complete",
+        description: "Key has been simulated as released! You can now view the original paper.",
+      });
+
+    } catch (error) {
+      toast({
+        title: "Simulation Error",
+        description: "Failed to simulate unlock",
+        variant: "destructive"
+      });
+    } finally {
+      setSimulatingUnlock(null);
+    }
+  };
+
+  const handleDownloadScrambled = async (examId: string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/preview/scrambled/${examId}/1`, {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${examId}_scrambled_page_1.png`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        toast({
+          title: "Download Started",
+          description: "Scrambled image download started",
+        });
+      } else {
+        throw new Error('Download failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to download scrambled image",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDownloadOriginal = async (examId: string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/preview/original/${examId}/1`, {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${examId}_original_page_1.png`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        toast({
+          title: "Download Started",
+          description: "Original image download started",
+        });
+      } else {
+        throw new Error('Download failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to download original image",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -147,8 +253,12 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={fetchExams}>
-              <Clock className="h-4 w-4 mr-1" />
+            <Button variant="outline" size="sm" onClick={fetchExams} disabled={loading}>
+              {loading ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-1" />
+              )}
               Refresh
             </Button>
             <Button variant="outline" onClick={onLogout}>
@@ -177,7 +287,7 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Awaiting Keys</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {availableExams.filter(exam => !exam.key_released).length}
+                    {availableExams.filter(exam => !exam.key_released && !simulatedUnlocked.has(exam.exam_id)).length}
                   </p>
                 </div>
                 <Clock className="h-8 w-8 text-warning" />
@@ -191,13 +301,15 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Ready to View</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {availableExams.filter(exam => exam.key_released).length}
+                    {availableExams.filter(exam => exam.key_released || simulatedUnlocked.has(exam.exam_id)).length}
                   </p>
                 </div>
                 <CheckCircle className="h-8 w-8 text-accent" />
               </div>
             </CardContent>
           </Card>
+
+
         </div>
 
         {/* Exam Papers List */}
@@ -221,65 +333,127 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
                 No exam papers available
               </div>
             ) : (
-              <div className="space-y-4">
-                {availableExams.map((exam) => (
-                  <div key={exam.exam_id} className="border border-border rounded-lg bg-card/50">
-                    <div className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-foreground text-lg">{exam.exam_id}</h3>
-                          <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                            <span>Scheduled: {new Date(exam.scheduled_time).toLocaleString()}</span>
+              <div className="space-y-6">
+                {availableExams.map((exam) => {
+                  const isUnlocked = exam.key_released || simulatedUnlocked.has(exam.exam_id);
+                  const isSimulated = simulatedUnlocked.has(exam.exam_id);
+                  
+                  return (
+                    <div key={exam.exam_id} className="border border-border rounded-lg bg-card/50 overflow-hidden">
+                      <div className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="font-semibold text-foreground text-xl">{exam.exam_id}</h3>
+                              {isSimulated && (
+                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                  <PlayCircle className="h-3 w-3 mr-1" />
+                                  Demo Mode
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                              <span>📅 Scheduled: {new Date(exam.scheduled_time).toLocaleString()}</span>
+                              <span>📄 Exam Paper</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-4">
+                              <Badge variant={isUnlocked ? 'default' : 'secondary'}>
+                                {isUnlocked ? 'Unlocked' : 'Locked'}
+                              </Badge>
+                              <Badge variant={isUnlocked ? 'default' : 'destructive'}>
+                                {isUnlocked ? 'Key Available' : 'Key Pending'}
+                              </Badge>
+                              {exam.key_released && (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                  Official Release
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 mt-3">
-                            <Badge variant={exam.key_released ? 'default' : 'secondary'}>
-                              {exam.key_released ? 'Key Released' : 'Scheduled'}
-                            </Badge>
-                            <Badge variant={exam.key_released ? 'default' : 'destructive'}>
-                              {exam.key_released ? 'Key Available' : 'Key Locked'}
-                            </Badge>
+                          
+                          {/* Action Buttons */}
+                          <div className="flex flex-col gap-2 min-w-[200px]">
+                            {/* Simulate Unlock Button */}
+                            {!exam.key_released && !isSimulated && (
+                              <Button
+                                variant="outline"
+                                onClick={() => handleSimulateUnlock(exam.exam_id)}
+                                disabled={simulatingUnlock === exam.exam_id}
+                                className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 hover:from-green-100 hover:to-green-200"
+                              >
+                                {simulatingUnlock === exam.exam_id ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <PlayCircle className="h-4 w-4 mr-2" />
+                                )}
+                                Simulate Unlock
+                              </Button>
+                            )}
+                            
+                            {/* Download Buttons */}
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownloadScrambled(exam.exam_id)}
+                                className="flex-1"
+                              >
+                                <Download className="h-3 w-3 mr-1" />
+                                Scrambled
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownloadOriginal(exam.exam_id)}
+                                disabled={!isUnlocked}
+                                className="flex-1"
+                              >
+                                <FileDown className="h-3 w-3 mr-1" />
+                                Original
+                              </Button>
+                            </div>
+                            
+                            {/* Main Action Button */}
+                            <Button
+                              onClick={() => handleDecrypt(exam.exam_id)}
+                              disabled={!exam.key_released || decrypting === exam.exam_id}
+                              className="bg-gradient-to-r from-accent to-accent-glow disabled:from-muted disabled:to-muted"
+                            >
+                              {decrypting === exam.exam_id ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : isUnlocked ? (
+                                <Eye className="h-4 w-4 mr-2" />
+                              ) : (
+                                <Lock className="h-4 w-4 mr-2" />
+                              )}
+                              {isUnlocked ? 'View Paper' : 'Awaiting Key'}
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => handleDownload(exam.exam_id)}
-                            disabled={downloading === exam.exam_id}
-                          >
-                            {downloading === exam.exam_id ? (
-                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                            ) : (
-                              <Download className="h-4 w-4 mr-1" />
-                            )}
-                            Download Scrambled
-                          </Button>
-                          <Button
-                            onClick={() => handleDecrypt(exam.exam_id)}
-                            disabled={!exam.key_released || decrypting === exam.exam_id}
-                            className="bg-gradient-to-r from-accent to-accent-glow disabled:from-muted disabled:to-muted"
-                          >
-                            {decrypting === exam.exam_id ? (
-                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                            ) : exam.key_released ? (
-                              <Eye className="h-4 w-4 mr-1" />
-                            ) : (
-                              <Lock className="h-4 w-4 mr-1" />
-                            )}
-                            {exam.key_released ? 'Decrypt Paper' : 'Locked'}
-                          </Button>
+                      </div>
+
+                      {/* Enhanced Image Preview */}
+                      <div className="border-t border-border bg-muted/10">
+                        <div className="p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-medium text-foreground flex items-center gap-2">
+                              <ImageIcon className="h-4 w-4" />
+                              Paper Preview
+                            </h4>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Shield className="h-4 w-4" />
+                              {isUnlocked ? 'Decrypted View Available' : 'Encrypted Content Only'}
+                            </div>
+                          </div>
+                          <ImagePreview
+                            examId={exam.exam_id}
+                            keyReleased={isUnlocked}
+                          />
                         </div>
                       </div>
                     </div>
-
-                    {/* Image Preview */}
-                    <div className="border-t border-border p-4 bg-muted/20">
-                      <ImagePreview
-                        examId={exam.exam_id}
-                        keyReleased={exam.key_released}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>

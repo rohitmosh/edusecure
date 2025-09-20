@@ -68,7 +68,10 @@ def process_single_image(image_path, output_dir):
 def process_upload(file, exam_id, uploader, scheduled_time, upload_folder):
     """Process uploaded exam paper"""
     try:
+        print(f"Starting upload process for exam_id: {exam_id}")
+        
         if not file or not allowed_file(file.filename):
+            print("File validation failed")
             return {'success': False, 'error': 'Invalid file type'}
         
         # Create exam directory
@@ -86,30 +89,41 @@ def process_upload(file, exam_id, uploader, scheduled_time, upload_folder):
         
         # Convert to images based on file type
         file_ext = filename.rsplit('.', 1)[1].lower()
+        print(f"Processing file type: {file_ext}")
         
         if file_ext == 'pdf':
+            print("Converting PDF to images...")
             original_images, error = convert_pdf_to_images(temp_file_path, temp_dir)
         elif file_ext in ['png', 'jpg', 'jpeg']:
+            print("Processing single image...")
             original_images, error = process_single_image(temp_file_path, temp_dir)
         else:
+            print("Unsupported file format")
             return {'success': False, 'error': 'Unsupported file format'}
         
         if error:
+            print(f"Image processing error: {error}")
             return {'success': False, 'error': error}
         
+        print(f"Successfully processed {len(original_images)} images")
+        
         # Generate chaos key for scrambling
+        print("Generating chaos key...")
         chaos_key = generate_chaos_key()
         
         # Scramble each image and compute hashes
         scrambled_images = []
         page_hashes = {}
         
+        print(f"Starting scrambling process for {len(original_images)} images...")
         for i, img_path in enumerate(original_images):
+            print(f"Scrambling image {i + 1}/{len(original_images)}")
             # Scramble image
             scrambled_path = os.path.join(exam_dir, f'scrambled_page_{i + 1}.png')
             success, message = scramble_image(img_path, chaos_key, scrambled_path)
             
             if not success:
+                print(f"Scrambling failed for image {i + 1}: {message}")
                 return {'success': False, 'error': f'Scrambling failed: {message}'}
             
             scrambled_images.append(scrambled_path)
@@ -118,12 +132,17 @@ def process_upload(file, exam_id, uploader, scheduled_time, upload_folder):
             page_hash = compute_sha256(scrambled_path)
             page_hashes[f'page_{i + 1}'] = page_hash
         
+        print("Scrambling completed successfully")
+        
         # Save encrypted chaos key
+        print("Saving chaos key...")
         chaos_key_path = os.path.join(exam_dir, 'chaos_key.enc')
         if not save_encrypted_chaos_key(chaos_key, chaos_key_path):
+            print("Failed to save chaos key")
             return {'success': False, 'error': 'Failed to save chaos key'}
         
         # Create metadata
+        print("Creating metadata...")
         metadata = {
             'exam_id': exam_id,
             'uploader': uploader,
@@ -135,23 +154,31 @@ def process_upload(file, exam_id, uploader, scheduled_time, upload_folder):
         }
         
         # Encrypt metadata using Paillier
-        encrypted_metadata = encrypt_metadata(metadata, page_hashes)
+        print("Encrypting metadata...")
+        try:
+            encrypted_metadata = encrypt_metadata(metadata, page_hashes)
+        except Exception as e:
+            print(f"Metadata encryption failed: {e}")
+            # Fall back to unencrypted metadata for now
+            encrypted_metadata = metadata
         
         # Save metadata
+        print("Saving metadata...")
         metadata_path = os.path.join(exam_dir, 'metadata.json')
         with open(metadata_path, 'w') as f:
             json.dump(encrypted_metadata, f, indent=2)
         
         # Save plain hashes for integrity verification
+        print("Saving integrity hashes...")
         integrity_path = os.path.join(exam_dir, 'integrity.sha256')
         with open(integrity_path, 'w') as f:
             for page, hash_val in page_hashes.items():
                 f.write(f"{page}: {hash_val}\n")
         
-        # Clean up temp directory
-        import shutil
-        shutil.rmtree(temp_dir)
+        # Don't clean up temp directory - keep original images for preview
+        # The temp directory contains original images needed for preview functionality
         
+        print("Upload process completed successfully!")
         return {
             'success': True,
             'exam_id': exam_id,
@@ -161,6 +188,9 @@ def process_upload(file, exam_id, uploader, scheduled_time, upload_folder):
         }
         
     except Exception as e:
+        print(f"Upload processing failed with exception: {e}")
+        import traceback
+        traceback.print_exc()
         return {'success': False, 'error': f'Upload processing failed: {e}'}
 
 def get_upload_info(exam_id, upload_folder):

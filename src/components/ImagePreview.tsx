@@ -32,6 +32,10 @@ const ImagePreview = ({ examId, keyReleased, className = '' }: ImagePreviewProps
     fetchPreviewInfo();
   }, [examId]);
 
+  useEffect(() => {
+    console.log(`ImagePreview state: examId=${examId}, keyReleased=${keyReleased}, showOriginal=${showOriginal}`);
+  }, [examId, keyReleased, showOriginal]);
+
   const fetchPreviewInfo = async () => {
     try {
       setLoading(true);
@@ -41,10 +45,13 @@ const ImagePreview = ({ examId, keyReleased, className = '' }: ImagePreviewProps
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Preview info received:', data);
         setPreviewInfo(data);
         if (data.total_pages > 0) {
           setCurrentPage(1);
         }
+      } else {
+        console.error('Failed to fetch preview info:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Failed to fetch preview info:', error);
@@ -55,8 +62,8 @@ const ImagePreview = ({ examId, keyReleased, className = '' }: ImagePreviewProps
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= (previewInfo?.total_pages || 0)) {
-      setCurrentPage(newPage);
       setImageLoading(true);
+      setCurrentPage(newPage);
     }
   };
 
@@ -150,6 +157,7 @@ const ImagePreview = ({ examId, keyReleased, className = '' }: ImagePreviewProps
                 </div>
               )}
               <img
+                key={`scrambled-${examId}-${currentPage}`}
                 src={`http://localhost:5000/api/preview/scrambled/${examId}/${currentPage}`}
                 alt={`Scrambled page ${currentPage}`}
                 className="w-full h-full object-contain"
@@ -196,11 +204,18 @@ const ImagePreview = ({ examId, keyReleased, className = '' }: ImagePreviewProps
                     </div>
                   )}
                   <img
+                    key={`original-${examId}-${currentPage}`}
                     src={`http://localhost:5000/api/preview/original/${examId}/${currentPage}`}
                     alt={`Original page ${currentPage}`}
                     className="w-full h-full object-contain"
-                    onLoad={handleImageLoad}
-                    onError={handleImageError}
+                    onLoad={() => {
+                      console.log(`Original image loaded: ${examId}, page ${currentPage}`);
+                      handleImageLoad();
+                    }}
+                    onError={(e) => {
+                      console.error(`Original image failed to load: ${examId}, page ${currentPage}`, e);
+                      handleImageError();
+                    }}
                     style={{ display: imageLoading ? 'none' : 'block' }}
                   />
                   <div className="absolute top-2 right-2">

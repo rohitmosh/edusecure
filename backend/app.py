@@ -49,19 +49,19 @@ def load_user(user_id):
     return None
 
 # Configuration
-UPLOAD_FOLDER = '../papers'
-USERS_FILE = '../users/users.json'
-LOGS_FILE = '../logs/logs.json'
-CONFIG_FILE = '../config/system_config.json'
+UPLOAD_FOLDER = 'papers'  # Relative to project root
+USERS_FILE = 'users/users.json'
+LOGS_FILE = 'logs/logs.json'
+CONFIG_FILE = 'config/system_config.json'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Ensure directories exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs('../users', exist_ok=True)
-os.makedirs('../logs', exist_ok=True)
-os.makedirs('../config', exist_ok=True)
+os.makedirs('users', exist_ok=True)
+os.makedirs('logs', exist_ok=True)
+os.makedirs('config', exist_ok=True)
 
 # Add poppler to PATH if it exists in project directory
 poppler_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'poppler')
@@ -348,19 +348,29 @@ def examcenter_decrypt(exam_id):
 def preview_original(exam_id, page):
     """Serve original page image for preview"""
     try:
-        if current_user.role not in ['admin', 'faculty']:
+        print(f"Preview original request: exam_id={exam_id}, page={page}, user={current_user.username}")
+        
+        if current_user.role not in ['admin', 'faculty', 'exam_center']:
+            print(f"Unauthorized access attempt by {current_user.role}")
             return jsonify({'error': 'Unauthorized'}), 403
         
         # Look for original image in temp directory
         temp_dir = os.path.join(UPLOAD_FOLDER, exam_id, 'temp')
         image_path = os.path.join(temp_dir, f'page_{page}.png')
         
+        print(f"Looking for original image at: {image_path}")
+        print(f"Temp directory exists: {os.path.exists(temp_dir)}")
+        print(f"Image file exists: {os.path.exists(image_path)}")
+        
         if not os.path.exists(image_path):
+            print(f"Original image not found: {image_path}")
             return jsonify({'error': 'Original image not found'}), 404
         
+        print(f"Serving original image: {image_path}")
         return send_file(image_path, mimetype='image/png')
         
     except Exception as e:
+        print(f"Error serving original image: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/preview/scrambled/<exam_id>/<int:page>', methods=['GET'])
@@ -368,18 +378,27 @@ def preview_original(exam_id, page):
 def preview_scrambled(exam_id, page):
     """Serve scrambled page image for preview"""
     try:
+        print(f"Preview scrambled request: exam_id={exam_id}, page={page}, user={current_user.username}")
+        
         if current_user.role not in ['admin', 'faculty', 'exam_center']:
+            print(f"Unauthorized access attempt by {current_user.role}")
             return jsonify({'error': 'Unauthorized'}), 403
         
         # Look for scrambled image
         image_path = os.path.join(UPLOAD_FOLDER, exam_id, f'scrambled_page_{page}.png')
         
+        print(f"Looking for scrambled image at: {image_path}")
+        print(f"Image file exists: {os.path.exists(image_path)}")
+        
         if not os.path.exists(image_path):
+            print(f"Scrambled image not found: {image_path}")
             return jsonify({'error': 'Scrambled image not found'}), 404
         
+        print(f"Serving scrambled image: {image_path}")
         return send_file(image_path, mimetype='image/png')
         
     except Exception as e:
+        print(f"Error serving scrambled image: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/preview/info/<exam_id>', methods=['GET'])
@@ -387,11 +406,18 @@ def preview_scrambled(exam_id, page):
 def preview_info(exam_id):
     """Get preview information for an exam"""
     try:
+        print(f"Preview info request: exam_id={exam_id}, user={current_user.username}")
+        
         if current_user.role not in ['admin', 'faculty', 'exam_center']:
+            print(f"Unauthorized access attempt by {current_user.role}")
             return jsonify({'error': 'Unauthorized'}), 403
         
         exam_dir = os.path.join(UPLOAD_FOLDER, exam_id)
+        print(f"Exam directory: {exam_dir}")
+        print(f"Exam directory exists: {os.path.exists(exam_dir)}")
+        
         if not os.path.exists(exam_dir):
+            print(f"Exam directory not found: {exam_dir}")
             return jsonify({'error': 'Exam not found'}), 404
         
         # Count pages
@@ -399,36 +425,96 @@ def preview_info(exam_id):
         original_pages = []
         
         # Check scrambled pages
+        print("Checking for scrambled pages...")
         for file in os.listdir(exam_dir):
             if file.startswith('scrambled_page_') and file.endswith('.png'):
                 page_num = int(file.replace('scrambled_page_', '').replace('.png', ''))
                 scrambled_pages.append(page_num)
+        print(f"Found scrambled pages: {scrambled_pages}")
         
         # Check original pages in temp directory
         temp_dir = os.path.join(exam_dir, 'temp')
+        print(f"Temp directory: {temp_dir}")
+        print(f"Temp directory exists: {os.path.exists(temp_dir)}")
+        
         if os.path.exists(temp_dir):
+            print("Checking for original pages...")
             for file in os.listdir(temp_dir):
                 if file.startswith('page_') and file.endswith('.png'):
                     page_num = int(file.replace('page_', '').replace('.png', ''))
                     original_pages.append(page_num)
+        print(f"Found original pages: {original_pages}")
         
         scrambled_pages.sort()
         original_pages.sort()
         
-        return jsonify({
+        result = {
             'exam_id': exam_id,
             'scrambled_pages': scrambled_pages,
             'original_pages': original_pages,
-            'total_pages': max(len(scrambled_pages), len(original_pages))
-        })
+            'total_pages': max(len(scrambled_pages), len(original_pages)) if scrambled_pages or original_pages else 0
+        }
+        print(f"Preview info result: {result}")
+        
+        return jsonify(result)
         
     except Exception as e:
+        print(f"Error getting preview info: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+
+@app.route('/api/debug/exam/<exam_id>', methods=['GET'])
+@login_required
+def debug_exam_files(exam_id):
+    """Debug endpoint to check exam file structure"""
+    try:
+        exam_dir = os.path.join(UPLOAD_FOLDER, exam_id)
+        
+        if not os.path.exists(exam_dir):
+            return jsonify({'error': 'Exam directory not found', 'path': exam_dir}), 404
+        
+        # Check main directory
+        main_files = os.listdir(exam_dir)
+        
+        # Check temp directory
+        temp_dir = os.path.join(exam_dir, 'temp')
+        temp_files = []
+        if os.path.exists(temp_dir):
+            temp_files = os.listdir(temp_dir)
+        
+        # Check specific files
+        page_1_original = os.path.join(temp_dir, 'page_1.png')
+        page_1_scrambled = os.path.join(exam_dir, 'scrambled_page_1.png')
+        
+        debug_info = {
+            'exam_id': exam_id,
+            'exam_dir': exam_dir,
+            'exam_dir_exists': os.path.exists(exam_dir),
+            'main_files': main_files,
+            'temp_dir': temp_dir,
+            'temp_dir_exists': os.path.exists(temp_dir),
+            'temp_files': temp_files,
+            'page_1_original_exists': os.path.exists(page_1_original),
+            'page_1_scrambled_exists': os.path.exists(page_1_scrambled),
+            'user_role': current_user.role
+        }
+        
+        if os.path.exists(page_1_original):
+            debug_info['page_1_original_size'] = os.path.getsize(page_1_original)
+        
+        if os.path.exists(page_1_scrambled):
+            debug_info['page_1_scrambled_size'] = os.path.getsize(page_1_scrambled)
+        
+        return jsonify(debug_info)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Initialize system if needed
