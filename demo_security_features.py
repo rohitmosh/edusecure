@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-EduSecure-HE Security Features Demonstration Script
+EduSecure Security Features Demonstration Script
 This script demonstrates all the cryptographic security features
 """
 
@@ -21,7 +21,7 @@ from logs import append_log, verify_log_chain, detect_tampering
 
 def print_banner():
     """Print demo banner"""
-    print("🔐 EduSecure-HE Security Features Demonstration")
+    print("🔐 EduSecure Security Features Demonstration")
     print("=" * 60)
     print("This demo showcases all cryptographic security features:")
     print("• Chaotic Pixel Scrambling (Logistic Map + Arnold Cat Map)")
@@ -431,7 +431,7 @@ def main():
         generate_demo_report()
         
         print("\n" + "=" * 60)
-        print("🔐 EduSecure-HE Security Demonstration Complete!")
+        print("🔐 EduSecure Security Demonstration Complete!")
         print("All cryptographic features working correctly.")
         print("=" * 60)
         

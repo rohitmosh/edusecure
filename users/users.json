@@ -7,12 +7,12 @@
     },
     {
       "username": "faculty1",
-      "password": "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5",
+      "password": "27041f5856c7387a997252694afb048d1aa939228ffcdbd6285b979b8da20e7a",
       "role": "faculty"
     },
     {
       "username": "center1",
-      "password": "0a041b9462caa4a31bac3567e0b6e6fd9100787db2ab433d96f6d178cabfce90",
+      "password": "bf0769fed92fb5b2bf1b09c6bf2babcea4737d6ee936c74eddee21948294fbc5",
       "role": "exam_center"
     }
   ]

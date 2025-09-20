@@ -21,7 +21,7 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch('http://localhost:5000/api/login', {
         method: 'POST',
@@ -67,7 +67,7 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
           </div>
           <div>
             <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              EduSecure-HE
+              EduSecure
             </CardTitle>
             <CardDescription className="text-muted-foreground">
               Secure Exam Paper Management System
@@ -82,7 +82,7 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          
+
           <form onSubmit={handleLogin} className="space-y-4">
 
             <div className="space-y-2">
@@ -109,8 +109,8 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
               />
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary-glow hover:to-accent-glow transition-all duration-300 shadow-md hover:shadow-lg"
               disabled={!username || !password || isLoading}
             >

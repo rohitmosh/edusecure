@@ -2,7 +2,8 @@ import json
 import hashlib
 import os
 
-USERS_FILE = '../users/users.json'
+# Get the absolute path to users.json
+USERS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'users', 'users.json')
 
 def hash_password(password):
     """Hash password using SHA-256"""

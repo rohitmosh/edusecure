@@ -1,4 +1,4 @@
-# 🪟 Windows Setup Guide for EduSecure-HE
+# 🪟 Windows Setup Guide for EduSecure
 
 If you're having issues with the automated startup scripts, follow this manual setup guide.
 

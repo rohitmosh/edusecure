@@ -2,20 +2,20 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Building2, 
-  Download, 
-  Unlock, 
-  Lock, 
-  Clock, 
-  FileText, 
-  Shield, 
+import {
+  Building2,
+  Download,
+  Lock,
+  Clock,
+  FileText,
+  Shield,
   AlertTriangle,
   CheckCircle,
   Eye,
   Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import ImagePreview from './ImagePreview';
 
 interface ExamCenterViewProps {
   username: string;
@@ -66,7 +66,7 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
   const handleDownload = async (examId: string) => {
     try {
       setDownloading(examId);
-      
+
       const response = await fetch(`http://localhost:5000/api/examcenter/download/${examId}`, {
         credentials: 'include'
       });
@@ -100,7 +100,7 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
   const handleDecrypt = async (examId: string) => {
     try {
       setDecrypting(examId);
-      
+
       const response = await fetch(`http://localhost:5000/api/examcenter/decrypt/${examId}`, {
         method: 'POST',
         credentials: 'include'
@@ -241,8 +241,8 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             onClick={() => handleDownload(exam.exam_id)}
                             disabled={downloading === exam.exam_id}
                           >
@@ -253,7 +253,7 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
                             )}
                             Download Scrambled
                           </Button>
-                          <Button 
+                          <Button
                             onClick={() => handleDecrypt(exam.exam_id)}
                             disabled={!exam.key_released || decrypting === exam.exam_id}
                             className="bg-gradient-to-r from-accent to-accent-glow disabled:from-muted disabled:to-muted"
@@ -271,71 +271,12 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
                       </div>
                     </div>
 
-                    {/* Visual Preview */}
+                    {/* Image Preview */}
                     <div className="border-t border-border p-4 bg-muted/20">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3 text-destructive" />
-                            Scrambled (Downloaded)
-                          </Label>
-                          <div className="aspect-[4/3] bg-gradient-to-br from-red-100 to-red-200 rounded border-2 border-red-300 flex items-center justify-center">
-                            <div className="text-center">
-                              <Shield className="h-6 w-6 mx-auto mb-1 text-red-600" />
-                              <p className="text-xs text-red-600 font-medium">ENCRYPTED</p>
-                              <div className="mt-2 grid grid-cols-6 gap-1">
-                                {Array.from({ length: 24 }).map((_, i) => (
-                                  <div key={i} className="h-1 bg-red-400 rounded" style={{
-                                    transform: `rotate(${Math.random() * 360}deg)`,
-                                    opacity: Math.random()
-                                  }}></div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium flex items-center gap-1">
-                            {exam.key_released ? (
-                              <>
-                                <CheckCircle className="h-3 w-3 text-accent" />
-                                Original (Decrypted)
-                              </>
-                            ) : (
-                              <>
-                                <Lock className="h-3 w-3 text-muted-foreground" />
-                                Original (Locked)
-                              </>
-                            )}
-                          </Label>
-                          <div className={`aspect-[4/3] rounded border-2 flex items-center justify-center transition-all duration-500 ${
-                            exam.key_released 
-                              ? 'bg-gradient-to-br from-green-100 to-green-200 border-green-300' 
-                              : 'bg-muted border-muted-foreground/20 blur-sm'
-                          }`}>
-                            <div className="text-center p-2">
-                              {exam.key_released ? (
-                                <>
-                                  <FileText className="h-6 w-6 mx-auto mb-1 text-green-600" />
-                                  <p className="text-xs text-green-600 font-medium">READABLE</p>
-                                  <div className="mt-2 space-y-1">
-                                    <div className="h-1 bg-green-500 rounded w-3/4 mx-auto"></div>
-                                    <div className="h-1 bg-green-500 rounded w-full mx-auto"></div>
-                                    <div className="h-1 bg-green-500 rounded w-2/3 mx-auto"></div>
-                                    <div className="h-1 bg-green-500 rounded w-5/6 mx-auto"></div>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <Lock className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
-                                  <p className="text-xs text-muted-foreground">AWAITING KEY</p>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <ImagePreview
+                        examId={exam.exam_id}
+                        keyReleased={exam.key_released}
+                      />
                     </div>
                   </div>
                 ))}
@@ -352,8 +293,8 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
               <div>
                 <h4 className="font-semibold text-foreground">Security Notice</h4>
                 <p className="text-sm text-muted-foreground mt-1">
-                  All exam papers are protected by chaotic pixel scrambling. Papers remain unreadable until 
-                  the admin releases the chaos key at the scheduled exam time. Any attempt to access papers 
+                  All exam papers are protected by chaotic pixel scrambling. Papers remain unreadable until
+                  the admin releases the chaos key at the scheduled exam time. Any attempt to access papers
                   before the scheduled time will be logged and reported.
                 </p>
               </div>

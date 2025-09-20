@@ -18,7 +18,7 @@ def initialize_logs():
                 "user": "system",
                 "exam_id": None,
                 "timestamp": datetime.now().isoformat(),
-                "details": "EduSecure-HE system initialized",
+                "details": "EduSecure system initialized",
                 "prev_hash": "0000",
                 "hash": ""
             }

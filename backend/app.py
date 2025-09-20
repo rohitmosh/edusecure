@@ -63,6 +63,16 @@ os.makedirs('../users', exist_ok=True)
 os.makedirs('../logs', exist_ok=True)
 os.makedirs('../config', exist_ok=True)
 
+# Add poppler to PATH if it exists in project directory
+poppler_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'poppler')
+if os.path.exists(poppler_path):
+    for root, dirs, files in os.walk(poppler_path):
+        if 'pdftoppm.exe' in files:
+            current_path = os.environ.get('PATH', '')
+            if root not in current_path:
+                os.environ['PATH'] = root + os.pathsep + current_path
+            break
+
 @app.route('/api/login', methods=['POST'])
 def login():
     """User authentication endpoint"""
@@ -330,6 +340,88 @@ def examcenter_decrypt(exam_id):
         else:
             return jsonify({'error': result['error']}), 403
             
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/preview/original/<exam_id>/<int:page>', methods=['GET'])
+@login_required
+def preview_original(exam_id, page):
+    """Serve original page image for preview"""
+    try:
+        if current_user.role not in ['admin', 'faculty']:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        # Look for original image in temp directory
+        temp_dir = os.path.join(UPLOAD_FOLDER, exam_id, 'temp')
+        image_path = os.path.join(temp_dir, f'page_{page}.png')
+        
+        if not os.path.exists(image_path):
+            return jsonify({'error': 'Original image not found'}), 404
+        
+        return send_file(image_path, mimetype='image/png')
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/preview/scrambled/<exam_id>/<int:page>', methods=['GET'])
+@login_required
+def preview_scrambled(exam_id, page):
+    """Serve scrambled page image for preview"""
+    try:
+        if current_user.role not in ['admin', 'faculty', 'exam_center']:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        # Look for scrambled image
+        image_path = os.path.join(UPLOAD_FOLDER, exam_id, f'scrambled_page_{page}.png')
+        
+        if not os.path.exists(image_path):
+            return jsonify({'error': 'Scrambled image not found'}), 404
+        
+        return send_file(image_path, mimetype='image/png')
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/preview/info/<exam_id>', methods=['GET'])
+@login_required
+def preview_info(exam_id):
+    """Get preview information for an exam"""
+    try:
+        if current_user.role not in ['admin', 'faculty', 'exam_center']:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        exam_dir = os.path.join(UPLOAD_FOLDER, exam_id)
+        if not os.path.exists(exam_dir):
+            return jsonify({'error': 'Exam not found'}), 404
+        
+        # Count pages
+        scrambled_pages = []
+        original_pages = []
+        
+        # Check scrambled pages
+        for file in os.listdir(exam_dir):
+            if file.startswith('scrambled_page_') and file.endswith('.png'):
+                page_num = int(file.replace('scrambled_page_', '').replace('.png', ''))
+                scrambled_pages.append(page_num)
+        
+        # Check original pages in temp directory
+        temp_dir = os.path.join(exam_dir, 'temp')
+        if os.path.exists(temp_dir):
+            for file in os.listdir(temp_dir):
+                if file.startswith('page_') and file.endswith('.png'):
+                    page_num = int(file.replace('page_', '').replace('.png', ''))
+                    original_pages.append(page_num)
+        
+        scrambled_pages.sort()
+        original_pages.sort()
+        
+        return jsonify({
+            'exam_id': exam_id,
+            'scrambled_pages': scrambled_pages,
+            'original_pages': original_pages,
+            'total_pages': max(len(scrambled_pages), len(original_pages))
+        })
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

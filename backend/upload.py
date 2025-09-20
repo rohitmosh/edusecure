@@ -18,8 +18,23 @@ def allowed_file(filename):
 def convert_pdf_to_images(pdf_path, output_dir):
     """Convert PDF pages to images using pdf2image"""
     try:
-        # Convert PDF to images
-        pages = convert_from_path(pdf_path, dpi=200, fmt='PNG')
+        # Try to find poppler path
+        poppler_path = None
+        
+        # Check if poppler is in the project directory
+        project_poppler = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'poppler')
+        if os.path.exists(project_poppler):
+            for root, dirs, files in os.walk(project_poppler):
+                if 'pdftoppm.exe' in files:
+                    poppler_path = root
+                    break
+        
+        # Convert PDF to images with poppler path
+        if poppler_path:
+            pages = convert_from_path(pdf_path, dpi=200, fmt='PNG', poppler_path=poppler_path)
+        else:
+            # Try without specifying path (in case it's in system PATH)
+            pages = convert_from_path(pdf_path, dpi=200, fmt='PNG')
         
         images = []
         for i, page in enumerate(pages):
@@ -30,7 +45,7 @@ def convert_pdf_to_images(pdf_path, output_dir):
         return images, None
         
     except Exception as e:
-        return None, f"Error converting PDF: {e}"
+        return None, f"Error converting PDF: {e}. Make sure poppler is installed by running 'python install_poppler_windows.py' and restart your terminal."
 
 def process_single_image(image_path, output_dir):
     """Process a single image file"""

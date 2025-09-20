@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-EduSecure-HE Backend Server
+EduSecure Backend Server
 Run this script to start the Flask backend server
 """
 
@@ -39,7 +39,7 @@ def setup_directories():
 
 def main():
     """Main function to start the server"""
-    print("🔐 EduSecure-HE Backend Server")
+    print("🔐 EduSecure Backend Server")
     print("=" * 40)
     
     # Check dependencies

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-EduSecure-HE Application Launcher
+EduSecure Application Launcher
 This script helps you start both backend and frontend servers
 """
 
@@ -14,7 +14,7 @@ from pathlib import Path
 
 def print_banner():
     """Print application banner"""
-    print("🔐 EduSecure-HE: Secure Exam Paper Management System")
+    print("🔐 EduSecure: Secure Exam Paper Management System")
     print("=" * 60)
     print("🎯 Features:")
     print("  • Chaotic Pixel Scrambling")
@@ -167,7 +167,7 @@ def wait_for_servers():
     webbrowser.open("http://localhost:5173")
     
     print("\n" + "=" * 60)
-    print("🎉 EduSecure-HE is now running!")
+    print("🎉 EduSecure is now running!")
     print("📱 Frontend: http://localhost:5173")
     print("🔧 Backend API: http://localhost:5000")
     print("\n👥 Demo Credentials:")
@@ -263,7 +263,7 @@ def main():
         # Wait for clean shutdown
         time.sleep(2)
         
-        print("👋 EduSecure-HE stopped successfully")
+        print("👋 EduSecure stopped successfully")
 
 if __name__ == "__main__":
     main()

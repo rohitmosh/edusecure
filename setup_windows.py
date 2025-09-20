@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Windows-Specific Setup for EduSecure-HE
+Windows-Specific Setup for EduSecure
 Handles common Windows dependency issues
 """
 
@@ -10,7 +10,7 @@ import subprocess
 import time
 
 def print_banner():
-    print("🪟 EduSecure-HE Windows Setup")
+    print("🪟 EduSecure Windows Setup")
     print("=" * 40)
     print("Fixing common Windows dependency issues...")
     print("=" * 40)
@@ -225,7 +225,7 @@ def examcenter_papers():
     return jsonify({'papers': []})
 
 if __name__ == '__main__':
-    print("🔐 EduSecure-HE Minimal Version")
+    print("🔐 EduSecure Minimal Version")
     print("=" * 40)
     print("✅ Basic authentication working")
     print("⚠️ Full crypto features require all dependencies")

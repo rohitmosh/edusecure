@@ -1,4 +1,4 @@
-# EduSecure-HE: Secure Exam Paper Management System
+# EduSecure: Secure Exam Paper Management System
 
 A comprehensive secure exam paper management system that uses chaotic pixel scrambling, homomorphic encryption, and tamper-proof logging to protect exam papers until their scheduled release time.
 

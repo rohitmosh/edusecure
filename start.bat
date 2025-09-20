@@ -1,5 +1,5 @@
 @echo off
-echo 🔐 EduSecure-HE: Secure Exam Paper Management System
+echo 🔐 EduSecure: Secure Exam Paper Management System
 echo ============================================================
 echo Starting application setup...
 echo ============================================================
@@ -77,7 +77,7 @@ if /i "%demo%"=="y" (
 
 REM Start the application
 echo.
-echo 🚀 Starting EduSecure-HE application...
+echo 🚀 Starting EduSecure application...
 echo.
 echo 📱 Frontend will be available at: http://localhost:5173
 echo 🔧 Backend API will be available at: http://localhost:5000
@@ -109,6 +109,6 @@ echo 🌐 Opening browser...
 start http://localhost:5173
 
 echo.
-echo 🎉 EduSecure-HE is now running!
+echo 🎉 EduSecure is now running!
 echo Close this window or press any key to exit setup.
 pause >nul

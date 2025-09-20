@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Simple EduSecure-HE Backend Server
+Simple EduSecure Backend Server
 Runs without strict dependency checking
 """
 
@@ -22,7 +22,7 @@ def setup_directories():
 
 def main():
     """Main function to start the server"""
-    print("🔐 EduSecure-HE Backend Server (Simple Mode)")
+    print("🔐 EduSecure Backend Server (Simple Mode)")
     print("=" * 50)
     
     # Setup directories

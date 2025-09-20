@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-EduSecure-HE Quick Start (No Virtual Environment)
+EduSecure Quick Start (No Virtual Environment)
 Simple startup script that uses system Python
 """
 
@@ -13,7 +13,7 @@ from pathlib import Path
 
 def print_banner():
     """Print application banner"""
-    print("🔐 EduSecure-HE: Quick Start")
+    print("🔐 EduSecure: Quick Start")
     print("=" * 40)
     print("🎯 Simple startup without virtual environment")
     print("=" * 40)
@@ -148,7 +148,7 @@ def main():
     webbrowser.open("http://localhost:5173")
     
     print("\n" + "=" * 60)
-    print("🎉 EduSecure-HE is now running!")
+    print("🎉 EduSecure is now running!")
     print("📱 Frontend: http://localhost:5173")
     print("🔧 Backend API: http://localhost:5000")
     print("\n👥 Demo Credentials:")
@@ -184,7 +184,7 @@ def main():
         # Wait for clean shutdown
         time.sleep(2)
         
-        print("👋 EduSecure-HE stopped successfully")
+        print("👋 EduSecure stopped successfully")
 
 if __name__ == "__main__":
     main()
