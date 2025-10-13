@@ -16,7 +16,9 @@ import {
   Lock,
   Unlock,
   CheckCircle,
-  Loader2
+  Loader2,
+  Trash2,
+  RefreshCw
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -29,6 +31,7 @@ const AdminDashboard = ({ username, onLogout }: AdminDashboardProps) => {
   const [systemLogs, setSystemLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyReleasing, setKeyReleasing] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -138,6 +141,46 @@ const AdminDashboard = ({ username, onLogout }: AdminDashboardProps) => {
     }
   };
 
+  const handleDeletePaper = async (examId: string) => {
+    try {
+      // Confirm deletion
+      if (!window.confirm(`Are you sure you want to delete exam paper "${examId}"? This action cannot be undone.`)) {
+        return;
+      }
+
+      setDeleting(examId);
+      
+      const response = await fetch(`http://localhost:5000/api/admin/delete_paper/${examId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Paper Deleted",
+          description: `Exam paper ${examId} has been permanently deleted.`
+        });
+        fetchData(); // Refresh data
+      } else {
+        toast({
+          title: "Deletion Failed",
+          description: data.error || 'Failed to delete paper',
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete paper",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -152,9 +195,19 @@ const AdminDashboard = ({ username, onLogout }: AdminDashboardProps) => {
               <p className="text-muted-foreground">Welcome, {username}</p>
             </div>
           </div>
-          <Button variant="outline" onClick={onLogout}>
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+              {loading ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-1" />
+              )}
+              Refresh
+            </Button>
+            <Button variant="outline" onClick={onLogout}>
+              Logout
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -270,6 +323,19 @@ const AdminDashboard = ({ username, onLogout }: AdminDashboardProps) => {
                             <Calendar className="h-4 w-4 mr-1" />
                             {new Date(exam.scheduled_time).toLocaleString()}
                           </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            onClick={() => handleDeletePaper(exam.exam_id)}
+                            disabled={deleting === exam.exam_id}
+                          >
+                            {deleting === exam.exam_id ? (
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 mr-1" />
+                            )}
+                            Delete
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -359,29 +425,83 @@ const AdminDashboard = ({ username, onLogout }: AdminDashboardProps) => {
                     No system logs available
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {systemLogs.slice(-10).reverse().map((log) => (
-                      <div key={log.id} className="flex items-center justify-between p-3 border border-border rounded-lg bg-card/30">
-                        <div className="flex items-center gap-4">
-                          <div className="w-2 h-2 rounded-full bg-accent"></div>
-                          <div>
-                            <span className="font-medium text-foreground">{log.event}</span>
-                            <span className="text-muted-foreground ml-2">by {log.user}</span>
-                            {log.exam_id && (
-                              <span className="text-muted-foreground ml-2">on {log.exam_id}</span>
-                            )}
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {systemLogs.slice(-20).reverse().map((log) => {
+                      const getEventColor = (event: string) => {
+                        switch (event) {
+                          case 'login': return 'bg-blue-500';
+                          case 'logout': return 'bg-gray-500';
+                          case 'upload': return 'bg-green-500';
+                          case 'download': return 'bg-yellow-500';
+                          case 'delete_paper': return 'bg-red-500';
+                          case 'delete_paper_failed': return 'bg-red-700';
+                          case 'key_release': return 'bg-purple-500';
+                          case 'verify': return 'bg-cyan-500';
+                          case 'decrypt': return 'bg-orange-500';
+                          default: return 'bg-accent';
+                        }
+                      };
+
+                      const getEventIcon = (event: string) => {
+                        switch (event) {
+                          case 'delete_paper': return '🗑️';
+                          case 'delete_paper_failed': return '❌';
+                          case 'upload': return '📤';
+                          case 'download': return '📥';
+                          case 'login': return '🔐';
+                          case 'logout': return '🚪';
+                          case 'key_release': return '🔑';
+                          case 'verify': return '✅';
+                          case 'decrypt': return '🔓';
+                          default: return '📋';
+                        }
+                      };
+
+                      return (
+                        <div key={log.id} className="flex items-start justify-between p-4 border border-border rounded-lg bg-card/30 hover:bg-card/50 transition-colors">
+                          <div className="flex items-start gap-4 flex-1">
+                            <div className={`w-3 h-3 rounded-full ${getEventColor(log.event)} mt-1 flex-shrink-0`}></div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-lg">{getEventIcon(log.event)}</span>
+                                <span className="font-medium text-foreground capitalize">{log.event.replace('_', ' ')}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  ID: {log.id}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                <span className="font-medium">User:</span> {log.user}
+                                {log.exam_id && (
+                                  <>
+                                    <span className="mx-2">•</span>
+                                    <span className="font-medium">Exam:</span> {log.exam_id}
+                                  </>
+                                )}
+                              </div>
+                              {log.details && (
+                                <div className="text-sm text-muted-foreground mt-1 break-words">
+                                  {log.details}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1 ml-4 flex-shrink-0">
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(log.timestamp).toLocaleDateString()}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(log.timestamp).toLocaleTimeString()}
+                            </span>
+                            <Badge 
+                              variant={log.event.includes('failed') || log.event.includes('error') ? 'destructive' : 'default'}
+                              className="text-xs"
+                            >
+                              {log.event}
+                            </Badge>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">
-                            {new Date(log.timestamp).toLocaleTimeString()}
-                          </span>
-                          <Badge variant="default">
-                            {log.event}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>

@@ -3,11 +3,19 @@ import os
 from datetime import datetime
 from hashing import create_hash_chain_entry, verify_hash_chain
 
-LOGS_FILE = '../logs/logs.json'
+LOGS_FILE = 'logs/logs.json'
 
 def initialize_logs():
     """Initialize logs file if it doesn't exist"""
     try:
+        # Get absolute path to logs file
+        logs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')
+        logs_file_path = os.path.join(logs_dir, 'logs.json')
+        
+        # Update the global LOGS_FILE variable
+        global LOGS_FILE
+        LOGS_FILE = logs_file_path
+        
         if not os.path.exists(LOGS_FILE):
             os.makedirs(os.path.dirname(LOGS_FILE), exist_ok=True)
             
@@ -101,6 +109,9 @@ def append_log(event, user, exam_id, details=""):
 def get_logs(limit=None, event_filter=None, user_filter=None, exam_filter=None):
     """Get logs with optional filtering"""
     try:
+        # Ensure logs are initialized
+        initialize_logs()
+        
         if not os.path.exists(LOGS_FILE):
             return []
         

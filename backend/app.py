@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 import os
 import json
+import shutil
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 import hashlib
@@ -51,7 +52,7 @@ def load_user(user_id):
 # Configuration
 UPLOAD_FOLDER = 'papers'  # Relative to project root
 USERS_FILE = 'users/users.json'
-LOGS_FILE = 'logs/logs.json'
+LOGS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs', 'logs.json')
 CONFIG_FILE = 'config/system_config.json'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -240,6 +241,44 @@ def admin_verify_integrity(exam_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/admin/delete_paper/<exam_id>', methods=['DELETE'])
+@login_required
+def admin_delete_paper(exam_id):
+    """Admin endpoint to delete uploaded papers"""
+    try:
+        if current_user.role != 'admin':
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        exam_path = os.path.join(app.config['UPLOAD_FOLDER'], exam_id)
+        if not os.path.exists(exam_path):
+            return jsonify({'error': 'Exam not found'}), 404
+        
+        # Get metadata before deletion for logging
+        metadata_path = os.path.join(exam_path, 'metadata.json')
+        metadata = {}
+        if os.path.exists(metadata_path):
+            with open(metadata_path, 'r') as f:
+                metadata = json.load(f)
+        
+        # Delete the entire exam directory
+        import shutil
+        shutil.rmtree(exam_path)
+        
+        # Log the deletion event
+        append_log('delete_paper', current_user.username, exam_id,
+                  f"Exam paper {exam_id} deleted by admin. Original uploader: {metadata.get('uploader', 'unknown')}")
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Exam paper {exam_id} deleted successfully'
+        })
+        
+    except Exception as e:
+        # Log the failed deletion attempt
+        append_log('delete_paper_failed', current_user.username, exam_id,
+                  f"Failed to delete exam paper {exam_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/admin/logs', methods=['GET'])
 @login_required
 def admin_get_logs():
@@ -248,19 +287,17 @@ def admin_get_logs():
         if current_user.role != 'admin':
             return jsonify({'error': 'Unauthorized'}), 403
         
-        if os.path.exists(LOGS_FILE):
-            with open(LOGS_FILE, 'r') as f:
-                logs = json.load(f)
-            
-            # Verify log chain integrity
-            chain_valid = verify_log_chain(logs)
-            
-            return jsonify({
-                'logs': logs,
-                'chain_valid': chain_valid
-            })
-        else:
-            return jsonify({'logs': [], 'chain_valid': True})
+        # Use the get_logs function from logs.py
+        from logs import get_logs
+        logs = get_logs()
+        
+        # Verify log chain integrity
+        chain_valid = verify_log_chain(logs)
+        
+        return jsonify({
+            'logs': logs,
+            'chain_valid': chain_valid
+        })
             
     except Exception as e:
         return jsonify({'error': str(e)}), 500
