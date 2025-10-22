@@ -128,18 +128,10 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
             </Button>
           </form>
 
-          <div className="text-center space-y-2">
+          <div className="text-center">
             <p className="text-xs text-muted-foreground">
               Protected by SHA-256 encryption and role-based access control
             </p>
-            <div className="text-xs text-muted-foreground">
-              <p className="font-semibold mb-1">Demo Credentials:</p>
-              <div className="space-y-1">
-                <p><strong>Admin:</strong> admin1 / admin123</p>
-                <p><strong>Faculty:</strong> faculty1 / faculty123</p>
-                <p><strong>Exam Center:</strong> center1 / center123</p>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>

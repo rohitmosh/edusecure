@@ -29,29 +29,42 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 class User(UserMixin):
-    def __init__(self, username, role):
+    def __init__(self, username, role, center_id=None):
         self.id = username
         self.username = username
         self.role = role
+        self.center_id = center_id
 
 @login_manager.user_loader
 def load_user(user_id):
     # Load user from users.json
     try:
+        print(f"load_user called with user_id: {user_id}")
+        print(f"USERS_FILE path: {USERS_FILE}")
+        print(f"USERS_FILE exists: {os.path.exists(USERS_FILE)}")
+        
         if os.path.exists(USERS_FILE):
             with open(USERS_FILE, 'r') as f:
                 users_data = json.load(f)
             
+            print(f"Loaded users data: {[u['username'] for u in users_data.get('users', [])]}")
+            
             for user in users_data.get('users', []):
                 if user['username'] == user_id:
-                    return User(user['username'], user['role'])
-    except:
-        pass
+                    center_id = user.get('center_id') if user['role'] == 'exam_center' else None
+                    print(f"Found and loading user: {user['username']}, role: {user['role']}, center_id: {center_id}")
+                    return User(user['username'], user['role'], center_id)
+        
+        print(f"User not found in load_user: {user_id}")
+    except Exception as e:
+        print(f"Error loading user {user_id}: {e}")
+        import traceback
+        traceback.print_exc()
     return None
 
 # Configuration
 UPLOAD_FOLDER = 'papers'  # Relative to project root
-USERS_FILE = 'users/users.json'
+USERS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'users', 'users.json')
 LOGS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs', 'logs.json')
 CONFIG_FILE = 'config/system_config.json'
 
@@ -85,20 +98,32 @@ def login():
         if not username or not password:
             return jsonify({'error': 'Username and password required'}), 400
         
+        print(f"Login attempt: username={username}")
         user_data = authenticate_user(username, password)
+        print(f"Authentication result for {username}: {user_data}")
+        
         if user_data:
-            user = User(username, user_data['role'])
+            center_id = user_data.get('center_id') if user_data['role'] == 'exam_center' else None
+            user = User(username, user_data['role'], center_id)
             login_user(user)
+            
+            print(f"User {username} logged in successfully with role {user_data['role']}")
             
             # Log the login event
             append_log('login', username, None, f"User {username} logged in")
             
-            return jsonify({
+            response_data = {
                 'success': True,
                 'role': user_data['role'],
                 'username': username
-            })
+            }
+            
+            if center_id:
+                response_data['center_id'] = center_id
+            
+            return jsonify(response_data)
         else:
+            print(f"Authentication failed for {username}")
             return jsonify({'error': 'Invalid credentials'}), 401
             
     except Exception as e:
@@ -127,9 +152,15 @@ def faculty_upload():
         file = request.files['file']
         exam_id = request.form.get('exam_id')
         scheduled_time = request.form.get('scheduled_time')
+        target_center = request.form.get('target_center')
         
-        if not exam_id or not scheduled_time:
-            return jsonify({'error': 'Exam ID and scheduled time required'}), 400
+        if not exam_id or not scheduled_time or not target_center:
+            return jsonify({'error': 'Exam ID, scheduled time, and target center required'}), 400
+        
+        # Validate target center
+        valid_centers = ['center1', 'center2', 'center3']
+        if target_center not in valid_centers:
+            return jsonify({'error': 'Invalid target center'}), 400
         
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
@@ -140,7 +171,8 @@ def faculty_upload():
             exam_id, 
             current_user.username, 
             scheduled_time,
-            app.config['UPLOAD_FOLDER']
+            app.config['UPLOAD_FOLDER'],
+            target_center
         )
         
         if result['success']:
@@ -153,6 +185,30 @@ def faculty_upload():
             return jsonify({'error': result['error']}), 500
             
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/faculty/centers', methods=['GET'])
+@login_required
+def faculty_get_centers():
+    """Faculty endpoint to get available exam centers"""
+    try:
+        print(f"Faculty centers request from user: {current_user.username}, role: {current_user.role}")
+        
+        if current_user.role != 'faculty':
+            print(f"Unauthorized access attempt by {current_user.username} with role {current_user.role}")
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        centers = [
+            {'id': 'center1', 'name': 'Exam Center 1'},
+            {'id': 'center2', 'name': 'Exam Center 2'},
+            {'id': 'center3', 'name': 'Exam Center 3'}
+        ]
+        
+        print(f"Returning centers for {current_user.username}: {centers}")
+        return jsonify({'centers': centers})
+        
+    except Exception as e:
+        print(f"Error in faculty_get_centers: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin/papers', methods=['GET'])
@@ -305,13 +361,14 @@ def admin_get_logs():
 @app.route('/api/examcenter/papers', methods=['GET'])
 @login_required
 def examcenter_get_papers():
-    """Exam center endpoint to view available papers"""
+    """Exam center endpoint to view available papers for their center"""
     try:
         if current_user.role != 'exam_center':
             return jsonify({'error': 'Unauthorized'}), 403
         
         papers = []
         papers_dir = app.config['UPLOAD_FOLDER']
+        user_center_id = current_user.center_id
         
         if os.path.exists(papers_dir):
             for exam_folder in os.listdir(papers_dir):
@@ -321,12 +378,16 @@ def examcenter_get_papers():
                     if os.path.exists(metadata_path):
                         with open(metadata_path, 'r') as f:
                             metadata = json.load(f)
-                            # Only show basic info to exam centers
-                            papers.append({
-                                'exam_id': metadata['exam_id'],
-                                'scheduled_time': metadata['scheduled_time'],
-                                'key_released': metadata.get('key_released', False)
-                            })
+                            
+                            # Only show papers assigned to this center
+                            if metadata.get('target_center') == user_center_id:
+                                papers.append({
+                                    'exam_id': metadata['exam_id'],
+                                    'scheduled_time': metadata['scheduled_time'],
+                                    'key_released': metadata.get('key_released', False),
+                                    'target_center': metadata.get('target_center'),
+                                    'uploader': metadata.get('uploader')
+                                })
         
         return jsonify({'papers': papers})
         
@@ -506,6 +567,30 @@ def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
 
+@app.route('/api/debug/users', methods=['GET'])
+def debug_users():
+    """Debug endpoint to check loaded users"""
+    try:
+        if os.path.exists(USERS_FILE):
+            with open(USERS_FILE, 'r') as f:
+                users_data = json.load(f)
+            
+            # Return usernames only (not passwords)
+            usernames = [user['username'] for user in users_data.get('users', [])]
+            return jsonify({
+                'users_file_exists': True,
+                'users_file_path': USERS_FILE,
+                'total_users': len(usernames),
+                'usernames': usernames
+            })
+        else:
+            return jsonify({
+                'users_file_exists': False,
+                'users_file_path': USERS_FILE
+            })
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
 @app.route('/api/debug/exam/<exam_id>', methods=['GET'])
 @login_required
 def debug_exam_files(exam_id):
@@ -561,18 +646,41 @@ if __name__ == '__main__':
             "users": [
                 {
                     "username": "admin1",
-                    "password": hash_password("admin123"),
+                    "password": hash_password("admin111"),
                     "role": "admin"
                 },
                 {
                     "username": "faculty1", 
-                    "password": hash_password("faculty123"),
+                    "password": hash_password("faculty111"),
+                    "role": "faculty"
+                },
+                {
+                    "username": "faculty2", 
+                    "password": hash_password("faculty222"),
+                    "role": "faculty"
+                },
+                {
+                    "username": "faculty3", 
+                    "password": hash_password("faculty333"),
                     "role": "faculty"
                 },
                 {
                     "username": "center1",
-                    "password": hash_password("center123"), 
-                    "role": "exam_center"
+                    "password": hash_password("center111"), 
+                    "role": "exam_center",
+                    "center_id": "center1"
+                },
+                {
+                    "username": "center2",
+                    "password": hash_password("center222"), 
+                    "role": "exam_center",
+                    "center_id": "center2"
+                },
+                {
+                    "username": "center3",
+                    "password": hash_password("center333"), 
+                    "role": "exam_center",
+                    "center_id": "center3"
                 }
             ]
         }

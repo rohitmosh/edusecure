@@ -12,18 +12,30 @@ def hash_password(password):
 def authenticate_user(username, password):
     """Authenticate user credentials"""
     try:
+        print(f"Authenticating user: {username}")
+        print(f"Auth.py - Users file path: {USERS_FILE}")
+        print(f"Auth.py - Users file exists: {os.path.exists(USERS_FILE)}")
+        print(f"Auth.py - Current working directory: {os.getcwd()}")
+        
         if not os.path.exists(USERS_FILE):
+            print("Users file not found!")
             return None
         
         with open(USERS_FILE, 'r') as f:
             users_data = json.load(f)
         
+        print(f"Loaded {len(users_data.get('users', []))} users from file")
+        
         hashed_password = hash_password(password)
+        print(f"Hashed password for {username}: {hashed_password}")
         
         for user in users_data.get('users', []):
+            print(f"Checking user: {user['username']}, stored hash: {user['password']}")
             if user['username'] == username and user['password'] == hashed_password:
+                print(f"Authentication successful for {username}")
                 return user
         
+        print(f"Authentication failed for {username} - no matching user found")
         return None
         
     except Exception as e:

@@ -2,18 +2,41 @@
   "users": [
     {
       "username": "admin1",
-      "password": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+      "password": "ffd33f577660793809c7070ed3509cdcaf1db683996f19fb10b96ca33268a5cb",
       "role": "admin"
     },
     {
       "username": "faculty1",
-      "password": "27041f5856c7387a997252694afb048d1aa939228ffcdbd6285b979b8da20e7a",
+      "password": "8df1094441170cfd0b06547fddba23c1e94485579487a385b3529f1bcfd7eff1",
+      "role": "faculty"
+    },
+    {
+      "username": "faculty2",
+      "password": "630f66a1ecfcd886fd1bb617fb5d95c64fc2450be7a144d84a60987e54e6433f",
+      "role": "faculty"
+    },
+    {
+      "username": "faculty3",
+      "password": "111c02341c246ee0d9a17ce4ccd033a0ae74be583be3cbb5091dbef7ff4c0eb4",
       "role": "faculty"
     },
     {
       "username": "center1",
-      "password": "bf0769fed92fb5b2bf1b09c6bf2babcea4737d6ee936c74eddee21948294fbc5",
-      "role": "exam_center"
+      "password": "6ddf4c4f1872cc7494397c77ee5506e7ded598f663b0fbe4be467920cfb80878",
+      "role": "exam_center",
+      "center_id": "center1"
+    },
+    {
+      "username": "center2",
+      "password": "e2a4a05602b3821ac03978efdc98eab6e9d3b4eb0b2e2f1e0693d75c37564b9b",
+      "role": "exam_center",
+      "center_id": "center2"
+    },
+    {
+      "username": "center3",
+      "password": "f1aea5194b138396ae5847547998ecbfaea57b3731c1c6d9ddc8be602f576011",
+      "role": "exam_center",
+      "center_id": "center3"
     }
   ]
 }

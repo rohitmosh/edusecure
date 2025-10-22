@@ -65,7 +65,7 @@ def process_single_image(image_path, output_dir):
     except Exception as e:
         return None, f"Error processing image: {e}"
 
-def process_upload(file, exam_id, uploader, scheduled_time, upload_folder):
+def process_upload(file, exam_id, uploader, scheduled_time, upload_folder, target_center=None):
     """Process uploaded exam paper"""
     try:
         print(f"Starting upload process for exam_id: {exam_id}")
@@ -150,7 +150,8 @@ def process_upload(file, exam_id, uploader, scheduled_time, upload_folder):
             'scheduled_time': scheduled_time,
             'total_pages': len(original_images),
             'key_released': False,
-            'release_time': None
+            'release_time': None,
+            'target_center': target_center
         }
         
         # Encrypt metadata using Paillier

@@ -355,6 +355,7 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
                             <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                               <span>📅 Scheduled: {new Date(exam.scheduled_time).toLocaleString()}</span>
                               <span>📄 Exam Paper</span>
+                              {exam.uploader && <span>👨‍🏫 By: {exam.uploader}</span>}
                             </div>
                             <div className="flex items-center gap-2 mt-4">
                               <Badge variant={isUnlocked ? 'default' : 'secondary'}>

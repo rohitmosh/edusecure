@@ -303,6 +303,7 @@ const AdminDashboard = ({ username, onLogout }: AdminDashboardProps) => {
                             <span>Uploaded by: {exam.uploader}</span>
                             <span>Pages: {exam.total_pages}</span>
                             <span>Upload Time: {new Date(exam.upload_time).toLocaleString()}</span>
+                            {exam.target_center && <span>Target: {exam.target_center}</span>}
                           </div>
                           <div className="flex items-center gap-2 mt-2">
                             <Badge variant={exam.key_released ? 'default' : 'secondary'}>

@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Upload,
   FileText,
@@ -32,6 +33,8 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
   const [examTitle, setExamTitle] = useState('');
   const [description, setDescription] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
+  const [targetCenter, setTargetCenter] = useState('');
+  const [availableCenters, setAvailableCenters] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState('');
   const [progress, setProgress] = useState(0);
@@ -41,6 +44,50 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
   const [uploadResult, setUploadResult] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Set default centers as fallback
+    setAvailableCenters([
+      {'id': 'center1', 'name': 'Exam Center 1'},
+      {'id': 'center2', 'name': 'Exam Center 2'},
+      {'id': 'center3', 'name': 'Exam Center 3'}
+    ]);
+    
+    // Then try to fetch from API
+    fetchAvailableCenters();
+  }, []);
+
+  const fetchAvailableCenters = async () => {
+    try {
+      console.log('Fetching centers for user:', username);
+      const response = await fetch('http://localhost:5000/api/faculty/centers', {
+        credentials: 'include'
+      });
+
+      console.log('Centers response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Centers data received:', data);
+        setAvailableCenters(data.centers || []);
+      } else {
+        const errorData = await response.json();
+        console.error('Centers fetch failed:', response.status, errorData);
+        toast({
+          title: "Error",
+          description: `Failed to load exam centers: ${errorData.error || 'Unknown error'}`,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch centers:', error);
+      toast({
+        title: "Connection Error",
+        description: "Unable to load exam centers. Please check your connection.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -86,6 +133,7 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
       formData.append('file', file!);
       formData.append('exam_id', examId);
       formData.append('scheduled_time', scheduleTime);
+      formData.append('target_center', targetCenter);
 
       // Show processing steps while upload happens
       const uploadPromise = fetch('http://localhost:5000/api/faculty/upload', {
@@ -131,10 +179,10 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
   };
 
   const handleUpload = async () => {
-    if (!file || !examTitle) {
+    if (!file || !examTitle || !targetCenter) {
       toast({
         title: "Missing Information",
-        description: "Please provide both a file and exam title.",
+        description: "Please provide file, exam title, and target exam center.",
         variant: "destructive"
       });
       return;
@@ -197,6 +245,31 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="targetCenter">Target Exam Center</Label>
+                <Select value={targetCenter} onValueChange={setTargetCenter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select exam center" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCenters.length > 0 ? (
+                      availableCenters.map((center) => (
+                        <SelectItem key={center.id} value={center.id}>
+                          {center.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="loading" disabled>
+                        Loading centers...
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Choose which exam center will receive this paper ({availableCenters.length} centers available)
+                </p>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="scheduledTime">Scheduled Release Time (Optional)</Label>
                 <Input
                   id="scheduledTime"
@@ -244,7 +317,7 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
 
               <Button
                 onClick={handleUpload}
-                disabled={!file || !examTitle || isProcessing}
+                disabled={!file || !examTitle || !targetCenter || isProcessing}
                 className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary-glow hover:to-accent-glow"
               >
                 {isProcessing ? 'Processing...' : 'Secure Upload'}
