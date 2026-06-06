@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { API_BASE_URL } from '@/config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,7 +61,7 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
   const fetchAvailableCenters = async () => {
     try {
       console.log('Fetching centers for user:', username);
-      const response = await fetch('http://localhost:5000/api/faculty/centers', {
+      const response = await fetch(`${API_BASE_URL}/api/faculty/centers`, {
         credentials: 'include'
       });
 
@@ -136,7 +137,7 @@ const FacultyUpload = ({ username, onLogout }: FacultyUploadProps) => {
       formData.append('target_center', targetCenter);
 
       // Show processing steps while upload happens
-      const uploadPromise = fetch('http://localhost:5000/api/faculty/upload', {
+      const uploadPromise = fetch(`${API_BASE_URL}/api/faculty/upload`, {
         method: 'POST',
         credentials: 'include',
         body: formData,

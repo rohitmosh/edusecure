@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +44,7 @@ const AdminDashboard = ({ username, onLogout }: AdminDashboardProps) => {
       setLoading(true);
       
       // Fetch exam papers
-      const papersResponse = await fetch('http://localhost:5000/api/admin/papers', {
+      const papersResponse = await fetch(`${API_BASE_URL}/api/admin/papers`, {
         credentials: 'include'
       });
       
@@ -53,7 +54,7 @@ const AdminDashboard = ({ username, onLogout }: AdminDashboardProps) => {
       }
 
       // Fetch logs
-      const logsResponse = await fetch('http://localhost:5000/api/admin/logs', {
+      const logsResponse = await fetch(`${API_BASE_URL}/api/admin/logs`, {
         credentials: 'include'
       });
       
@@ -77,7 +78,7 @@ const AdminDashboard = ({ username, onLogout }: AdminDashboardProps) => {
     try {
       setKeyReleasing(examId);
       
-      const response = await fetch(`http://localhost:5000/api/admin/release_key/${examId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/release_key/${examId}`, {
         method: 'POST',
         credentials: 'include'
       });
@@ -110,7 +111,7 @@ const AdminDashboard = ({ username, onLogout }: AdminDashboardProps) => {
 
   const handleVerifyIntegrity = async (examId: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/verify_integrity/${examId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/verify_integrity/${examId}`, {
         credentials: 'include'
       });
 
@@ -150,7 +151,7 @@ const AdminDashboard = ({ username, onLogout }: AdminDashboardProps) => {
 
       setDeleting(examId);
       
-      const response = await fetch(`http://localhost:5000/api/admin/delete_paper/${examId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/delete_paper/${examId}`, {
         method: 'DELETE',
         credentials: 'include'
       });

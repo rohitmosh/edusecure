@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/config';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,7 +40,7 @@ const ImagePreview = ({ examId, keyReleased, className = '' }: ImagePreviewProps
   const fetchPreviewInfo = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/preview/info/${examId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/preview/info/${examId}`, {
         credentials: 'include'
       });
 
@@ -158,7 +159,7 @@ const ImagePreview = ({ examId, keyReleased, className = '' }: ImagePreviewProps
               )}
               <img
                 key={`scrambled-${examId}-${currentPage}`}
-                src={`http://localhost:5000/api/preview/scrambled/${examId}/${currentPage}`}
+                src={`${API_BASE_URL}/api/preview/scrambled/${examId}/${currentPage}`}
                 alt={`Scrambled page ${currentPage}`}
                 className="w-full h-full object-contain"
                 onLoad={handleImageLoad}
@@ -205,7 +206,7 @@ const ImagePreview = ({ examId, keyReleased, className = '' }: ImagePreviewProps
                   )}
                   <img
                     key={`original-${examId}-${currentPage}`}
-                    src={`http://localhost:5000/api/preview/original/${examId}/${currentPage}`}
+                    src={`${API_BASE_URL}/api/preview/original/${examId}/${currentPage}`}
                     alt={`Original page ${currentPage}`}
                     className="w-full h-full object-contain"
                     onLoad={() => {

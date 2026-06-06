@@ -11,6 +11,24 @@ A comprehensive secure exam paper management system that uses chaotic pixel scra
 - **Tamper-Proof Logs**: Hash-chained audit logs for complete accountability
 - **Role-Based Access**: Separate interfaces for Admin, Faculty, and Exam Centers
 
+## 📸 Screenshots
+
+![Screenshot 1](screenshots/Screenshot%202026-06-06%20at%2016.43.23.png)
+
+![Screenshot 2](screenshots/Screenshot%202026-06-06%20at%2016.43.32.png)
+
+![Screenshot 3](screenshots/Screenshot%202026-06-06%20at%2016.45.10.png)
+
+![Screenshot 4](screenshots/Screenshot%202026-06-06%20at%2016.46.24.png)
+
+![Screenshot 5](screenshots/Screenshot%202026-06-06%20at%2016.46.40.png)
+
+![Screenshot 6](screenshots/Screenshot%202026-06-06%20at%2016.46.51.png)
+
+![Screenshot 7](screenshots/Screenshot%202026-06-06%20at%2016.47.02.png)
+
+![Screenshot 8](screenshots/Screenshot%202026-06-06%20at%2016.48.11.png)
+
 ## 🏗️ Architecture
 
 ### Backend (Python Flask)

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,7 +47,7 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
 
   const fetchExams = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/examcenter/papers', {
+      const response = await fetch(`${API_BASE_URL}/api/examcenter/papers`, {
         credentials: 'include'
       });
 
@@ -75,7 +76,7 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
     try {
       setDownloading(examId);
 
-      const response = await fetch(`http://localhost:5000/api/examcenter/download/${examId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/examcenter/download/${examId}`, {
         credentials: 'include'
       });
 
@@ -109,7 +110,7 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
     try {
       setDecrypting(examId);
 
-      const response = await fetch(`http://localhost:5000/api/examcenter/decrypt/${examId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/examcenter/decrypt/${examId}`, {
         method: 'POST',
         credentials: 'include'
       });
@@ -174,7 +175,7 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
 
   const handleDownloadScrambled = async (examId: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/preview/scrambled/${examId}/1`, {
+      const response = await fetch(`${API_BASE_URL}/api/preview/scrambled/${examId}/1`, {
         credentials: 'include'
       });
 
@@ -207,7 +208,7 @@ const ExamCenterView = ({ username, onLogout }: ExamCenterViewProps) => {
 
   const handleDownloadOriginal = async (examId: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/preview/original/${examId}/1`, {
+      const response = await fetch(`${API_BASE_URL}/api/preview/original/${examId}/1`, {
         credentials: 'include'
       });
 
